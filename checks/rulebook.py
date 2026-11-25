@@ -29,8 +29,13 @@ TOLERANCE = 0.001       # seconds of float slack on beat boundaries
 # Things that must never appear in a caption on a public video.
 PRIVATE_PATTERNS = [
     (re.compile(r"(?i)(/home/|/Users/|~/|[A-Za-z]:\\\\Users\\\\)"), "a home path"),
-    (re.compile(r"(?i)(sk-[A-Za-z0-9]|api[_-]?key|secret|token|password|BEGIN [A-Z ]*PRIVATE KEY)"), "a key-shaped string"),
-    (re.compile(r"(?i)(ssh-rsa|ssh-ed25519|ghp_|github_pat_|xox[baprs]-)"), "a credential"),
+    # Keys only count with key-shaped evidence: a long sk- run, a
+    # name:=value pair, or a known token prefix. "60k tokens of context"
+    # is prose, not a secret (claude's review of the first cut).
+    (re.compile(r"sk-[A-Za-z0-9_-]{8,}|ghp_[A-Za-z0-9]{10,}|github_pat_[A-Za-z0-9_]{10,}|xox[baprs]-[A-Za-z0-9-]{10,}"), "a key-shaped string"),
+    (re.compile(r"(?i)(api[_-]?key|secret|token|password)\s*[:=]\s*\S"), "a key-shaped string"),
+    (re.compile(r"BEGIN [A-Z ]*PRIVATE KEY"), "a private key block"),
+    (re.compile(r"(?i)(ssh-rsa|ssh-ed25519)"), "a credential"),
 ]
 
 
@@ -53,6 +58,7 @@ def check_script(doc, machine=None):
     if not isinstance(scenes, list) or not scenes:
         return ["the script has no scenes"]
     seen_ids = set()
+    prev_end = None  # beat times are global to the video: continuity spans scenes
     for scene in scenes:
         if not isinstance(scene, dict):
             problems.append("a scene is not an object")
@@ -65,7 +71,6 @@ def check_script(doc, machine=None):
         if not isinstance(beats, list) or not beats:
             problems.append(f"scene {sid}: no beats")
             continue
-        prev_end = None
         for i, beat in enumerate(beats):
             where = f"scene {sid} beat {i}"
             if not isinstance(beat, dict):
@@ -136,6 +141,10 @@ def self_test():
     def script(beats, sid="s1"):
         return {"video": "t", "scenes": [{"id": sid, "beats": beats}]}
 
+    def two_scenes(b1, b2):
+        return {"video": "t", "scenes": [
+            {"id": "s1", "beats": b1}, {"id": "s2", "beats": b2}]}
+
     def check(name, ok, detail=""):
         print(("ok   " if ok else "FAIL ") + name)
         if not ok:
@@ -157,11 +166,22 @@ def self_test():
     check("a home path in a caption fails",
           any("home path" in p for p in check_script(script([dict(good_beat, caption="files in /home/neo")]), machine)))
     check("a key-shaped string fails",
-          any("key-shaped" in p for p in check_script(script([dict(good_beat, caption="token sk-abc123 here")]), machine)))
+          any("key-shaped" in p for p in check_script(script([dict(good_beat, caption="token sk-abc123def456 here")]), machine)))
     check("the machine name fails",
           any("machine name" in p for p in check_script(script([dict(good_beat, caption="on testbox today")]), machine)))
     check("an ordinary caption passes the private scan",
           check_script(script([dict(good_beat, caption="The crew talks.")]), machine) == [])
+    check("prose about tokens is not a key",
+          check_script(script([dict(good_beat, caption="60k tokens of context, honestly")]), machine) == [])
+    check("name=value still reads as a key",
+          any("key-shaped" in p for p in check_script(script([dict(good_beat, caption="api_key=abcd1234")]), machine)))
+    # Continuity spans scenes: times are global to the video.
+    check("back-to-back scenes pass",
+          check_script(two_scenes([good_beat], [dict(good_beat, start=2.5, end=5.0)]), machine) == [])
+    check("a gap between scenes fails",
+          any("gap" in p for p in check_script(two_scenes([good_beat], [dict(good_beat, start=3.0, end=5.0)]), machine)))
+    check("an overlap between scenes fails",
+          any("overlap" in p for p in check_script(two_scenes([good_beat], [dict(good_beat, start=2.0, end=4.0)]), machine)))
     # The real brief must pass.
     here = os.path.dirname(os.path.abspath(__file__))
     real = os.path.join(here, "..", "briefs", "001-comms-deck.script.json")
