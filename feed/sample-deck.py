@@ -6,8 +6,12 @@ context split, the limit meters, and deck-level totals. Nothing here
 writes, wakes or sends -- each frame only reads what the deck persists.
 
 Modes:
-  sim-deck-sample.py            print one frame (pretty JSON)
-  sim-deck-sample.py --watch N  sample every N seconds, NDJSON on stdout
+  sim-deck-sample.py                        print one frame (pretty JSON)
+  sim-deck-sample.py --save FRAME.json      write one public frame to a file
+                                            (no hostname; atomic replace)
+  sim-deck-sample.py --save FRAME.json --watch N
+                                            keep the frame file fresh every N s
+  sim-deck-sample.py --watch N              sample every N seconds, NDJSON on stdout
   sim-deck-sample.py --self-test
 
 Pure stdlib. Reads the same env the deck does (COMMS_DECK_HOME for the
@@ -19,6 +23,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -72,8 +77,12 @@ def seat_status():
         return {}
 
 
-def frame():
-    """One sample. Everything read-only; suitable to render scene by scene."""
+def frame(public=False):
+    """One sample. Everything read-only; suitable to render scene by scene.
+
+    `public=True` (the --save modes, sim-deck being a public repo) drops
+    the machine's hostname: the video only needs states and counts.
+    """
     data = deck_home()
     seats = {}
     usage_dir = data / "usage"
@@ -106,7 +115,7 @@ def frame():
     pool = {s: v["context_tokens"] for s, v in seats.items() if v["context_tokens"]}
     total = sum(pool.values())
     split = {s: round(100 * t / total, 2) for s, t in pool.items()} if total else {}
-    return {
+    out = {
         "t": time.time(),
         "machine": os.uname().nodename,
         "seats": seats,
@@ -115,6 +124,19 @@ def frame():
         "working": sorted(s for s, v in seats.items() if v["state"] == "busy"),
         "protocol": 1,  # the frame's shape version, for sim-deck's renderer
     }
+    if public:
+        del out["machine"]  # a public repo's frames don't carry the hostname
+    return out
+
+
+def save_frame(path):
+    """One frame to `path`, replaced atomically so a scene never reads half a file."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=".frame-")
+    with os.fdopen(fd, "w") as f:
+        json.dump(frame(public=True), f, indent=1, sort_keys=True)
+    os.replace(tmp, path)
 
 
 def main():
@@ -133,8 +155,28 @@ def main():
             assert abs(sum(f["context_split"].values()) - 100.0) < 1.0, f["context_split"]
             biggest = max(f["context_split"], key=f["context_split"].get)
             assert biggest in f["seats"]
+        # the saved frame is the public shape: no hostname, and nothing
+        # from any note's text (the frame never samples texts; keep it so)
+        here = tempfile.mkdtemp()
+        save_frame(Path(here) / "frame.json")
+        saved = json.loads((Path(here) / "frame.json").read_text())
+        assert "machine" not in saved and saved["protocol"] == 1 and saved["seats"] == f["seats"], sorted(saved)
+        assert "machine" in f, "the printed frame keeps the hostname for local use"
         print("sim-deck-sample: frames sample ok")
         return
+    if args and args[0] == "--save":
+        if not len(args) > 1:
+            print("usage: sample-deck.py --save FRAME.json [--watch SECONDS]", file=sys.stderr)
+            return 2
+        if "--watch" in args:
+            n = float(args[args.index("--watch") + 1]) if len(args) > args.index("--watch") + 1 else 1.0
+            while True:
+                save_frame(args[1])
+                time.sleep(n)
+        else:
+            save_frame(args[1])
+            print(f"saved {args[1]}")
+        return 0
     if args and args[0] == "--watch":
         n = float(args[1]) if len(args) > 1 else 1.0
         out = sys.stdout
@@ -144,6 +186,7 @@ def main():
             time.sleep(n)
     else:
         print(json.dumps(frame(), indent=1))
+    return 0
 
 
 if __name__ == "__main__":
