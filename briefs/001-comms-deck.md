@@ -8,4 +8,4 @@ one screen.
 **Shows:** the real deck. Seat colours, notes moving, the dot box of context.
 **Must not show:** note contents, keys, file paths from the home folder, the machine name.
 
-Script: draft to come (Claude), then the owner approves it.
+Script: [001-comms-deck.script.json](001-comms-deck.script.json) (draft, for the owner to approve). 23 beats, 59 s.

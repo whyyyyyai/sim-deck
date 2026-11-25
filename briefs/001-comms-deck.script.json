@@ -1,0 +1,62 @@
+{
+  "video": "001-comms-deck",
+  "title": "What is comms-deck?",
+  "fps": 30,
+  "size": [1920, 1080],
+  "format_note": "Times are seconds from the start of the video. Every caption has a beat whose picture is on screen while it shows. A scene is a list of beats; no beat is longer than 3 s, so the picture keeps changing. checks/ reads this file.",
+  "scenes": [
+    {
+      "id": "crew",
+      "beats": [
+        {"start": 0.0, "end": 2.5, "caption": "One machine.", "picture": "a dark screen; one small ship outline draws itself in the centre"},
+        {"start": 2.5, "end": 5.0, "caption": "A crew of AI agents.", "picture": "seat dots appear around the ship one by one, each in its seat colour"},
+        {"start": 5.0, "end": 7.5, "caption": "Claude, Grok, Vibe, Devin…", "picture": "camera drifts right; each dot gets its name label as the caption names it"},
+        {"start": 7.5, "end": 10.0, "caption": "…and more.", "picture": "the rest of the labels fade in; the ring slowly turns"}
+      ]
+    },
+    {
+      "id": "note",
+      "beats": [
+        {"start": 10.0, "end": 12.5, "caption": "They talk in notes.", "picture": "zoom to two seats; a small card leaves one dot"},
+        {"start": 12.5, "end": 15.0, "caption": "A note goes to a seat…", "picture": "the card flies along an arc, trailing the sender's colour"},
+        {"start": 15.0, "end": 17.5, "caption": "…and waits in its inbox.", "picture": "the card lands in a tray under the other seat; a count badge reads 1"},
+        {"start": 17.5, "end": 20.0, "caption": "Every note is kept.", "picture": "the card copies itself into a long log strip that scrolls left"}
+      ]
+    },
+    {
+      "id": "wake",
+      "beats": [
+        {"start": 20.0, "end": 22.5, "caption": "Idle agents sleep.", "picture": "a dim seat, its dot still; small z's drift up"},
+        {"start": 22.5, "end": 25.0, "caption": "A note wakes them.", "picture": "a card lands; the dot flashes bright"},
+        {"start": 25.0, "end": 27.5, "caption": "They read it and get to work.", "picture": "the dot starts to breathe; its state label flips idle → busy"},
+        {"start": 27.5, "end": 30.0, "caption": "No one has to watch.", "picture": "camera pulls back; several dots breathe at their own pace"}
+      ]
+    },
+    {
+      "id": "chat",
+      "beats": [
+        {"start": 30.0, "end": 32.5, "caption": "The owner sees it all…", "picture": "a big screen frame slides in: the chat view, notes as coloured lines"},
+        {"start": 32.5, "end": 35.0, "caption": "…on one chat screen.", "picture": "new lines scroll in from the bottom, each in its sender's colour"},
+        {"start": 35.0, "end": 37.5, "caption": "and answers anyone,", "picture": "a typed line appears in the composer and is sent"},
+        {"start": 37.5, "end": 40.0, "caption": "or everyone at once.", "picture": "the sent note splits into one card per seat and flies out"}
+      ]
+    },
+    {
+      "id": "split",
+      "beats": [
+        {"start": 40.0, "end": 42.5, "caption": "Each agent has a memory budget.", "picture": "the CONTEXT SPLIT box draws itself: 4 rows of empty dots"},
+        {"start": 42.5, "end": 45.0, "caption": "The box shows who is using it.", "picture": "dots fill row by row in seat colours, sized by real feed data"},
+        {"start": 45.0, "end": 47.5, "caption": "Working seats glow.", "picture": "the busy seats' runs breathe; idle runs stay still"},
+        {"start": 47.5, "end": 50.0, "caption": "Live, from the real deck.", "picture": "the legend slides in under the box, biggest first"}
+      ]
+    },
+    {
+      "id": "close",
+      "beats": [
+        {"start": 50.0, "end": 53.0, "caption": "comms-deck.", "picture": "everything shrinks back into the ring around the ship"},
+        {"start": 53.0, "end": 56.0, "caption": "How the crew talks.", "picture": "the ring glows in all seat colours at once"},
+        {"start": 56.0, "end": 59.0, "caption": "github.com/whyyyyyai/comms-deck", "picture": "the ship and ring fade; the address stays"}
+      ]
+    }
+  ]
+}
